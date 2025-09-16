@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+quant_env/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*~
+~*
+
+# Data files (consider using Git LFS for large files)
+*.csv
+*.json
+*.pkl
+*.h5
+*.feather
+*.parquet
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Custom exclusions
+# Backtest & RL frameworks (不随代码上传)
+quant_rl/
+backtrader/
+
+# dogs_of_30_mdna 仅保留目录结构（不上传文件）
+dogs_of_30_mdna/**
+!dogs_of_30_mdna/**/
+!dogs_of_30_mdna/**/.gitkeep
+mdna_markdowns/
+processed_financial_data.json
+financial_sentiment_analysis.json
