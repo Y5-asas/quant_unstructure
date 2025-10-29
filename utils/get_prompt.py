@@ -93,6 +93,8 @@ Current live positions & performance:
 
 
 if __name__ == "__main__":
+    # 测试
+
     # sys_prompt = get_sys_prompt(stock_list=["xxx", "sss"])
     # print(sys_prompt)
 
