@@ -1,0 +1,22 @@
+## DECISION FRAMEWORK
+
+### Identifying Position Status
+A coin has an **active position** if `quantity` is NOT null.
+A coin has **no position** if `quantity` is null.
+
+### For Coins WITH Active Positions
+Check each position in this order:
+1. Invalidation condition triggered? → Close immediately
+2. Stop loss or profit target hit? → Close
+3. Technical setup still valid? → Hold
+4. If uncertain → Hold (trust your exit plan)
+
+Available signals: "hold" or "close" ONLY
+
+### For Coins WITHOUT Positions
+Only consider if:
+- Current active positions < 6
+- Available cash > $1000  
+- You see a high-probability setup
+
+Available signal: "entry" ONLY

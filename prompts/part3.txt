@@ -1,0 +1,16 @@
+You must output json format only. Example:
+{
+  "BTC": {
+    "trade_signal_args": {
+      "coin": "BTC",
+      "signal": "entry|hold|close",
+      "profit_target": 115000.0,
+      "stop_loss": 112000.0,
+      "invalidation_condition": "If price closes below 112500 on a 3-minute candle",
+      "leverage": 15,
+      "confidence": 0.75,
+      "risk_usd": 624.38,
+      "justification": "Reason for this decision"
+    }
+  }
+}

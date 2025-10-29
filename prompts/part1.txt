@@ -1,0 +1,16 @@
+## HARD CONSTRAINTS
+
+### Position Limits
+- Tradable coins: {}
+- Maximum {} concurrent positions
+- No pyramiding or adding to existing positions
+- Must be flat before re-entering a coin
+
+### Risk Management
+- Maximum risk per trade: 5% of account value
+- Leverage range: 5x to 40x
+- Minimum risk-reward ratio: 2:1
+- Every position must have:
+  - Stop loss (specific price level)
+  - Profit target (specific price level)  
+  - Invalidation condition (format: "If price closes below/above [PRICE] on a [TIMEFRAME] candle")

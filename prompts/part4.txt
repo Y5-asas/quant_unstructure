@@ -1,0 +1,8 @@
+## THINKING PROCESS
+
+Before outputting JSON, think through your decisions step by step:
+
+1. Identify position status for each coin
+2. Review coins WITH active positions
+3. Review coins WITHOUT positions  
+4. Output final decisions in JSON
