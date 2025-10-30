@@ -1,64 +1,158 @@
-# 量化金融分析工具库
+# Project Guide: MD&A Extraction & Cleaning → Sentiment Factors → Backtesting and Plots
 
-一个用于金融数据分析和量化研究的Python工具库，专注于SEC文件处理、财务数据分析和技术指标计算。
+This repository implements an end-to-end workflow to:
 
-## 功能特性
+- Download and extract MD&A sections from SEC filings
+- Clean and normalize MD&A text
+- Run multi-dimensional financial sentiment analysis to produce sentiment factors
+- Backtest trading strategies based on those factors
+- Generate result plots and comparison tables
 
-- 📊 SEC文件下载和解析
-- 📈 财务数据分析（MDNA处理）
-- 🤖 情感分析工具
-- 🔢 技术指标计算
-- 📋 数据清洗和预处理
+- Data acquisition and cleaning: `sec_processing/`, `data/`
+- Sentiment analysis and factors: `ai_analysis/`
+- Backtesting and plotting: `backtesting/`
 
-## 项目结构
+## 1. Environment Setup
 
-```
-quant/
-├── clean_financial_reports.py    # 财务报告清洗工具
-├── download_dogs_mdna.py        # 道琼斯30成分股MDNA下载
-├── financial_sentiment_analyzer.py # 金融情感分析
-├── llm_provider.py              # LLM服务提供商接口
-├── sec_test.py                  # SEC API测试
-├── utils/                       # 工具函数
-├── backtrader/                  # 回测框架相关
-└── quant_rl/                   # 量化强化学习
-```
-
-## 安装要求
+Recommended: Python 3.10+ and a virtual environment.
 
 ```bash
-pip install -r requirements.txt
+# At repository root
+python -m venv .venv && source .venv/bin/activate
+pip install -U pip
+
+# Install backtesting/plotting dependencies
+pip install -r backtesting/requirements.txt
 ```
 
-## 使用方法
+Notes:
+- HF mirror environment variables are configured inside `backtesting/run.py`.
+- `.gitignore` excludes large datasets and generated artifacts; only whitelisted result folders are committed.
 
-1. 下载SEC文件：
-```python
-python download_dogs_mdna.py
+## 2. MD&A Download and Extraction
+
+Download MD&A sections for the Dogs of the Dow 30:
+
+```bash
+python sec_processing/download_dogs_mdna.py
 ```
 
-2. 处理财务数据：
-```python
-python process_jpm_mdna.py
+Main outputs:
+- `data/dogs_of_30_mdna/`: raw MD&A text organized by company/filing
+- `data/filing_urls.txt`: links to 10-K/10-Q filings used for downloads
+- (Optional) If you produce markdown-cleaned texts: `data/mdna_markdowns/`
+
+Single-company processing examples (as references):
+- `sec_processing/process_intc_mdna.py`
+- `sec_processing/process_jpm_mdna.py`
+
+## 3. Text Cleaning and Structuring
+
+Typical cleaning includes section segmentation, noise removal, encoding normalization, and format unification. Directory conventions:
+- Raw/intermediate: `data/dogs_of_30_mdna/`, `data/mdna_markdowns/`
+- Aggregated structured data (if generated): `data/processed_financial_data.json`
+
+To re-run/extend cleaning, follow patterns in scripts under `sec_processing/`.
+
+## 4. Sentiment Analysis → Factor Generation
+
+Run multi-dimensional financial sentiment analysis to produce factors:
+
+```bash
+python ai_analysis/financial_sentiment_analyzer.py
 ```
 
-3. 运行情感分析：
-```python
-python financial_sentiment_analyzer.py
+Key outputs (paths defined inside the script):
+- `data/financial_sentiment_analysis.json`: per-filing or per-period sentiment results
+- `data/sentiment_factors.csv`: aggregated sentiment factors (used by backtesting)
+
+Note: Prompt templates are embedded in code; `prompt/prompt.json` is currently unused. You may delete it or keep it as a placeholder for future externalization.
+
+## 5. Backtesting with Sentiment Factors
+
+Run the three-strategy backtest (Original Sentiment, Top-K Sentiment, Buy&Hold):
+
+```bash
+python backtesting/run.py
 ```
 
-## 数据说明
+Defaults in `backtesting/run.py`:
+- Data dir: `/root/quant/data/dogs_of_30_mdna`
+- Output dir: `/root/quant/backtesting/results`
+- Period: 2020-01-01 to 2024-12-31
+- Analyzer: `fingpt` (switch to `deepseek` to use DeepSeek)
 
-项目使用SEC EDGAR API获取上市公司财务数据，主要处理10-Q和10-K文件中的Management Discussion & Analysis (MDNA)部分。
+Backtest outputs (CSV):
+- `backtesting/results/original_strategy_performance.csv`
+- `backtesting/results/topk_strategy_performance.csv`
+- `backtesting/results/buy_hold_performance.csv`
 
-## 贡献指南
+### 5.1 FinGPT vs DeepSeek Comparison (Optional)
 
-欢迎提交Issue和Pull Request来改进这个项目。
+Run both analyzers and generate comparison artifacts:
 
-## 许可证
+```bash
+python backtesting/run_comparison.py
+```
 
-MIT License
+Outputs:
+- FinGPT results: `backtesting/results_fingpt/` (committed)
+- DeepSeek results: `backtesting/results_deepseek/` (ignored)
+- Comparison: `backtesting/results_comparison/` (committed)
+  - `comparison_data.csv`
+  - `metrics_comparison.csv`
+  - `finGPT_vs_deepseek_comparison.png`
 
-## 免责声明
+## 6. Plot Generation (Three Strategies)
 
-本项目仅用于教育和研究目的，不构成投资建议。使用者应自行承担风险。
+Generate fixed-style plots from the three-strategy results:
+
+```bash
+python backtesting/generate_plots_fixed.py
+```
+
+Outputs:
+- `backtesting/results/cumulative_returns_three_strategies.png`
+- `backtesting/results/quarterly_returns_three_strategies.png`
+- `backtesting/results/metrics_comparison_three_strategies.png`
+
+## 7. Directory and Commit Policy
+
+- Committed:
+  - `backtesting/results_fingpt/**`
+  - `backtesting/results_comparison/**`
+- Ignored (not committed):
+  - `backtesting/results_deepseek/**`
+  - Generic large data/intermediate artifacts (e.g., `data/`, `outputs/`) and common large file types unless explicitly whitelisted
+
+To commit an additional results folder, add an exception rule (e.g., `!backtesting/your_results_dir/**`) in `.gitignore`.
+
+## 8. Quickstart (Command Summary)
+
+```bash
+# 1) Download MD&A
+python sec_processing/download_dogs_mdna.py
+
+# 2) Generate sentiment factors
+python ai_analysis/financial_sentiment_analyzer.py
+
+# 3) Run backtest (FinGPT)
+python backtesting/run.py
+
+# 4) Create three-strategy plots from CSVs
+python backtesting/generate_plots_fixed.py
+
+# Optional: end-to-end comparison (FinGPT vs DeepSeek)
+python backtesting/run_comparison.py
+```
+
+## 9. Troubleshooting
+
+- Backtest errors:
+  - Ensure dependencies are installed: `pip install -r backtesting/requirements.txt`
+  - Ensure data directory exists: `/root/quant/data/dogs_of_30_mdna/`
+  - Ensure sufficient disk space and memory
+- Plotting errors:
+  - Verify required CSVs exist in `backtesting/results/` or `backtesting/results_fingpt/`
+
+— If you plan to publish more result folders, update exceptions in `.gitignore` accordingly.

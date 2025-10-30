@@ -51,6 +51,33 @@ logs/
 *.feather
 *.parquet
 
+# Project data and results (do not commit datasets or generated outputs)
+data/
+datasets/
+input/
+inputs/
+raw_data/
+processed_data/
+features/
+external/
+interim/
+outputs/
+output/
+results/
+reports/
+figures/
+charts/
+artifacts/
+models/
+checkpoints/
+experiments/
+runs/
+wandb/
+mlruns/
+tensorboard/
+lightning_logs/
+**/.ipynb_checkpoints/
+
 # IDE
 .vscode/
 .idea/
@@ -78,3 +105,26 @@ dogs_of_30_mdna/**
 mdna_markdowns/
 processed_financial_data.json
 financial_sentiment_analysis.json
+sec_test.py
+
+# Allow committing specific results
+!backtesting/results_fingpt/
+!backtesting/results_fingpt/**
+!backtesting/results_fingpt/**/*.csv
+!backtesting/results_fingpt/**/*.json
+
+!backtesting/results_comparison/
+!backtesting/results_comparison/**
+!backtesting/results_comparison/**/*.csv
+!backtesting/results_comparison/**/*.json
+
+# Keep deepseek results ignored
+backtesting/results_deepseek/
+
+maj
+list
+
+# Local installer logs/archives (do not commit)
+/=0.5.0
+/=4.30.0
+/1.zip
