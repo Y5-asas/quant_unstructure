@@ -2,9 +2,8 @@ import json
 from datetime import datetime, date
 
 
-def get_sys_prompt(stock_list):
-    prompt_root = "AlphaArena/prompts/"
-    prompt_path = ["part2.txt", "part3.txt", "part4.txt"]
+def get_sys_prompt(stock_list, prompt_root="prompts/"):
+    prompt_name = ["part2.txt", "part3.txt", "part4.txt"]
     prompt_p1 = f"""## HARD CONSTRAINTS
 
 ### Position Limits
@@ -24,7 +23,7 @@ def get_sys_prompt(stock_list):
 """
     prompts = [prompt_p1]
 
-    for file_name in prompt_path:
+    for file_name in prompt_name:
         file_path = prompt_root + file_name
         with open(file_path, "r", encoding="utf-8") as file:
             content = file.read()

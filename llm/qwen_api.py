@@ -2,6 +2,7 @@ import os
 from openai import OpenAI
 
 QWEN_API_KEY = "sk-8020014e7a404dc2bbe60b5d22c82111"
+QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 
 def qwen_response(sys_prompt, user_prompt, model="qwen-plus"):
@@ -17,6 +18,20 @@ def qwen_response(sys_prompt, user_prompt, model="qwen-plus"):
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
     )
 
+    completion = client.chat.completions.create(
+        # 模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
+        model=model,
+        messages=[
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+    )
+    # print(completion.choices[0].message.content)
+    content = completion.choices[0].message.content
+    return content
+
+
+def qwen_client_response(client: OpenAI, sys_prompt, user_prompt, model="qwen-plus"):
     completion = client.chat.completions.create(
         # 模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
         model=model,
