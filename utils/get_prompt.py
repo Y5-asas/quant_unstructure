@@ -54,6 +54,7 @@ def get_user_prompt(
     availableCash,
     currentAccountValue,
     positions,
+    initialCash,
 ):
     """
     args:

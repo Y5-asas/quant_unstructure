@@ -1,16 +1,14 @@
 You must output json format only. Example:
 {
-  "BTC": {
-    "trade_signal_args": {
-      "coin": "BTC",
-      "signal": "entry|hold|close",
-      "profit_target": 115000.0,
-      "stop_loss": 112000.0,
-      "invalidation_condition": "If price closes below 112500 on a 3-minute candle",
-      "leverage": 15,
-      "confidence": 0.75,
-      "risk_usd": 624.38,
-      "justification": "Reason for this decision"
-    }
-  }
+  "AAPL": {
+    "stock": "AAPL",
+    "signal": "entry|hold|close",
+    "profit_target": <the profit target of this stock you think>,
+    "stop_loss": <the stop loss of this stock you think>,
+    "change_value": <total price you buy or sell this stock>,
+    "leverage": <the leverage of this stock you think>,
+    "confidence": <the confidence of your decision>,
+    "risk_usd": <the risk cost of this stock you think>,
+    "justification": <Reason for this decision>
+  },
 }
