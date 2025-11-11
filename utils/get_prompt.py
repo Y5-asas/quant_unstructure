@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, date
+from typing import Dict, Iterable
 
 
 def get_sys_prompt(stock_list, prompt_root="prompts/"):
@@ -46,10 +47,96 @@ def iso_time_difference(iso_date1, iso_date2):
     return diff.days
 
 
+def _format_number(value, precision: int = 4):
+    if value is None:
+        return "NA"
+    try:
+        return f"{float(value):.{precision}f}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _format_series(series: Iterable, precision: int = 3) -> str:
+    values = list(series or [])
+    if not values:
+        return "NA"
+    return ", ".join(_format_number(val, precision=precision) for val in values)
+
+
+def format_positions(positions: Dict) -> str:
+    if not positions:
+        return "No open positions."
+
+    lines = []
+    for symbol, info in positions.items():
+        line = (
+            f"- {symbol}: qty={_format_number(info.get('buy_in_num'))}, "
+            f"entry={_format_number(info.get('buy_in_price'))}, "
+            f"target={_format_number(info.get('profit_target'))}, "
+            f"stop_loss={_format_number(info.get('stop_loss'))}"
+        )
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def format_market_snapshot(market_today: Dict, include_indicators: bool = True) -> str:
+    if not market_today:
+        return "No market data available."
+
+    sections = []
+    for symbol in sorted(market_today.keys()):
+        info = market_today[symbol]
+        indicators = info.get("indicators", {}) if include_indicators else {}
+
+        section_lines = [f"### {symbol}"]
+        section_lines.append(
+            "Prices: "
+            f"open={_format_number(info.get('open'))}, "
+            f"high={_format_number(info.get('high'))}, "
+            f"low={_format_number(info.get('low'))}, "
+            f"close={_format_number(info.get('close'))}"
+        )
+        section_lines.append(
+            "Recent closes (oldest->newest)=["
+            f"{_format_series(info.get('recent_closes'))}]"
+        )
+        section_lines.append(
+            "Recent volumes (oldest->newest)=["
+            f"{_format_series(info.get('recent_volumes'), precision=0)}]"
+        )
+
+        key_order = [
+            "sma_5",
+            "sma_10",
+            "sma_20",
+            "ema_5",
+            "ema_10",
+            "ema_20",
+            "macd_macd",
+            "macd_signal",
+            "macd_hist",
+            "rsi_14",
+            "atr_14",
+            "volatility_annualized",
+        ]
+        indicator_lines = [
+            f"{key}={_format_number(indicators.get(key))}"
+            for key in key_order
+            if key in indicators
+        ]
+        if indicator_lines:
+            section_lines.append("Indicators: " + ", ".join(indicator_lines))
+
+        sections.append("\n".join(section_lines))
+
+    return "\n\n".join(sections)
+
+
 def get_user_prompt(
     last_trading_time,
     invoketime,
-    marketData,
+    marketHistory,
+    marketToday,
     current_time,
     totalReturnPercent,
     availableCash,
@@ -69,26 +156,25 @@ def get_user_prompt(
     """
     # current_time = date.today().isoformat()
     duringtime = iso_time_difference(last_trading_time, current_time)
+    history_days = len(marketHistory) if marketHistory else 0
     user_prompt = f"""It has been {duringtime} days since you started trading.
-The current time is {current_time} 
+The current time is {current_time}
 You've been invoked {invoketime} times.
 
-ALL OF THE PRICE OR SIGNAL DATA BELOW IS ORDERED: OLDEST - NEWEST
+### DATA GRANULARITY
+- All market data is **daily** frequency.
+- Historical context includes the most recent {history_days} trading days available.
 
-Timeframes note: Unless stated otherwise in a section title, intraday series 
-are provided at 3 minute intervals. If a coin uses a different interval, it is 
-explicitly stated in that coin's section.
+### CURRENT MARKET SNAPSHOT
+{format_market_snapshot(marketToday)}
 
-**CURRENT MARKET STATE FOR ALL COINS**
-{marketData}
+### ACCOUNT PERFORMANCE
+- Current Total Return (percent): {_format_number(totalReturnPercent, precision=4)}
+- Available Cash: {_format_number(availableCash, precision=2)}
+- Current Account Value: {_format_number(currentAccountValue, precision=2)}
 
-**HERE IS YOUR ACCOUNT INFORMATION & PERFORMANCE**
-Current Total Return (percent): {totalReturnPercent}
-Available Cash: {availableCash}
-Current Account Value: {currentAccountValue}
-
-Current live positions & performance:
-{positions}
+### OPEN POSITIONS
+{format_positions(positions)}
 """
     return user_prompt
 
@@ -99,13 +185,35 @@ if __name__ == "__main__":
     # sys_prompt = get_sys_prompt(stock_list=["xxx", "sss"])
     # print(sys_prompt)
 
+    mock_market = {
+        "AAPL": {
+            "open": 100,
+            "high": 110,
+            "low": 95,
+            "close": 108,
+            "volume": 1_000_000,
+            "recent_closes": [95, 98, 102, 105, 108],
+            "recent_volumes": [800_000, 820_000, 900_000, 950_000, 1_000_000],
+            "indicators": {"ema_20": 101.2, "rsi_14": 62.5},
+        }
+    }
     user_prompt = get_user_prompt(
         last_trading_time="2025-10-27",
         invoketime=2,
-        marketData="xxx",
-        totalReturnPercent="2%",
+        marketHistory={"2025-10-27": mock_market},
+        marketToday=mock_market,
+        current_time=date.today().isoformat(),
+        totalReturnPercent=0.0234,
         availableCash=10023,
         currentAccountValue=42134,
-        positions="xxx",
+        positions={
+            "AAPL": {
+                "buy_in_num": 100,
+                "buy_in_price": 95.5,
+                "profit_target": 120,
+                "stop_loss": 90,
+            }
+        },
+        initialCash=100000,
     )
     print(user_prompt)

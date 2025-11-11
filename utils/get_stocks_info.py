@@ -1,19 +1,36 @@
 import os
-import glob
-import pandas as pd
 from collections import defaultdict
-from tqdm import tqdm
 from datetime import datetime, timedelta
+from typing import Dict, List
+
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
+from .indicators_daily import enrich_daily_indicators
 
 
-def read_one_stock_info(stock_path, start_date=None, end_date=None):
+BASE_COLUMNS = {"date", "open", "high", "low", "close", "volume", "thscode"}
+
+
+def _to_native(value):
+    if pd.isna(value):
+        return None
+    if isinstance(value, (np.generic,)):
+        return value.item()
+    return value
+
+
+def read_one_stock_info(
+    stock_path, start_date=None, end_date=None, recent_window: int = 5
+):
     """
     获取单个股票的数据
     读取 csv 返回字典 以时间为 key
     Return:
         {"2020-10-23": {"open": xxx, "close": xxx, ...}}
     """
-    stock_dict = defaultdict(dict)
+    stock_dict: Dict[str, Dict] = defaultdict(dict)
     stock_csv_info = pd.read_csv(stock_path)
     # date列确保为datetime格式
     # stock_csv_info["date"] = pd.to_datetime(stock_csv_info["date"])
@@ -25,16 +42,43 @@ def read_one_stock_info(stock_path, start_date=None, end_date=None):
         stock_csv_info = stock_csv_info[stock_csv_info["date"] > start_date]
     if end_date:
         stock_csv_info = stock_csv_info[stock_csv_info["date"] < end_date]
-    # print(stock_csv_info[:5])
+
+    stock_csv_info = enrich_daily_indicators(stock_csv_info)
+    closes: List = stock_csv_info["close"].tolist()
+    volumes: List = stock_csv_info["volume"].tolist()
+    indicator_columns = [
+        col for col in stock_csv_info.columns if col not in BASE_COLUMNS
+    ]
+
     for index, row in stock_csv_info.iterrows():
-        stock_dict[row["date"]] = {
-            "open": row["open"],
-            "high": row["high"],
-            "low": row["low"],
-            "close": row["close"],
-            "volume": row["volume"],
-            "code": row["thscode"],
+        date_key = row["date"]
+        recent_start = max(0, index - recent_window + 1)
+        recent_closes = [
+            _to_native(value) for value in closes[recent_start : index + 1]
+        ]
+        recent_volumes = [
+            _to_native(value) for value in volumes[recent_start : index + 1]
+        ]
+
+        base_info = {
+            "open": _to_native(row["open"]),
+            "high": _to_native(row["high"]),
+            "low": _to_native(row["low"]),
+            "close": _to_native(row["close"]),
+            "volume": _to_native(row["volume"]),
+            "code": row.get("thscode")
+            or os.path.basename(stock_path).split(".")[0],
         }
+
+        indicators = {
+            col: _to_native(row[col]) for col in indicator_columns if col in row
+        }
+
+        base_info["indicators"] = indicators
+        base_info["recent_closes"] = recent_closes
+        base_info["recent_volumes"] = recent_volumes
+
+        stock_dict[date_key] = base_info
     return stock_dict
 
 
@@ -121,16 +165,29 @@ def get_previous_k_dates(stocks_dict, date, k=10) -> dict:
     return {k: stocks_dict[k] for k in target_dates}, marketDataCurDay
 
 
-def format_df_marketData(marketData: dict):
+def format_df_marketData(marketData: dict, include_indicators: bool = True):
     columns = ["date", "open", "high", "low", "close", "volume", "code"]
-    marketDataDFdict = defaultdict(lambda: pd.DataFrame(columns=columns))
+    extra_columns: List[str] = []
+    if include_indicators and marketData:
+        sample_symbol = next(iter(next(iter(marketData.values())).values()))
+        extra_columns = sorted(sample_symbol.get("indicators", {}).keys())
+
+    marketDataDFdict = defaultdict(
+        lambda: pd.DataFrame(columns=columns + list(extra_columns))
+    )
     for i, date in enumerate(marketData):
         for stock in marketData[date]:
             new_row = marketData[date][stock].copy()
             new_row["date"] = date
             new_row["code"] = marketData[date][stock]["code"]
+            new_row.pop("recent_closes", None)
+            new_row.pop("recent_volumes", None)
             if i == len(marketData) - 1:
                 new_row["close"] = None
+            if include_indicators:
+                indicators = new_row.pop("indicators", {})
+                for key in extra_columns:
+                    new_row[key] = indicators.get(key)
             marketDataDFdict[stock].loc[len(marketDataDFdict[stock])] = new_row
     marketDataDF = pd.concat(marketDataDFdict.values(), ignore_index=True)
     return marketDataDF

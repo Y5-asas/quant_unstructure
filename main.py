@@ -7,12 +7,7 @@ from collections import defaultdict
 import concurrent.futures
 
 from utils.get_prompt import get_sys_prompt, get_user_prompt
-from utils.get_stocks_info import (
-    get_stocks_info,
-    get_previous_dates,
-    get_previous_k_dates,
-    format_df_marketData,
-)
+from utils.get_stocks_info import get_stocks_info, get_previous_k_dates
 from utils.process_output import (
     process_llm_output,
     update_account_info,
@@ -161,21 +156,9 @@ def market_trading(
     for i, date in enumerate(stocks_dict):
         if i < history:
             continue
-        # marketData = stocks_dict[date]  # 当日全部股票数据
-        marketData, marketDataCurDay = get_previous_k_dates(
+        marketHistory, marketDataCurDay = get_previous_k_dates(
             stocks_dict, date, k=history
         )
-        # print(marketData)
-        # print(list(marketData.keys()))
-        marketData = format_df_marketData(marketData)
-        # 获取纯字符串形式 df
-        marketData_str = marketData.to_string(
-            max_rows=None,  # 显示所有行
-            max_cols=None,  # 显示所有列
-            line_width=None,  # 不限制宽度
-            max_colwidth=None,  # 不限制列宽
-        )
-        # print(marketData)
         stocks_names = list(marketDataCurDay.keys())
         # stocks_names = list(set(marketData["code"]))
         responses = defaultdict(str)  # 回复结果字典
@@ -190,7 +173,10 @@ def market_trading(
             # 获取prompt
             sys_prompt = get_sys_prompt(stocks_names)
             user_prompt = get_user_prompt(
-                marketData=marketData_str, current_time=date, **accouunt_info
+                marketHistory=marketHistory,
+                marketToday=marketDataCurDay,
+                current_time=date,
+                **accouunt_info,
             )
             # with open("prompt_user.txt", "w", encoding="utf-8") as f:
             #     f.write(user_prompt)
@@ -229,7 +215,12 @@ def market_trading(
 
 
 def process_single_llm(
-    llm, marketData, marketDataCurDay, stocks_names, date, max_retry=20
+    llm,
+    marketHistory,
+    marketDataCurDay,
+    stocks_names,
+    date,
+    max_retry=20,
 ):
     """
     处理单个LLM的交易逻辑
@@ -240,7 +231,10 @@ def process_single_llm(
     accouunt_info = AccountInfoLLMs[llm]
     sys_prompt = get_sys_prompt(stocks_names)
     user_prompt = get_user_prompt(
-        marketData=marketData, current_time=date, **accouunt_info
+        marketHistory=marketHistory,
+        marketToday=marketDataCurDay,
+        current_time=date,
+        **accouunt_info,
     )
 
     while retry < max_retry:
@@ -275,17 +269,8 @@ def market_trading_parallel(
         if i < history:
             continue
         # marketData = stocks_dict[date]
-        marketData, marketDataCurDay = get_previous_k_dates(
+        marketHistory, marketDataCurDay = get_previous_k_dates(
             stocks_dict, date, k=history
-        )
-        marketData = format_df_marketData(marketData)
-        # 获取纯字符串形式 df
-        marketData_str = marketData.to_string(
-            max_rows=None,  # 显示所有行
-            max_cols=None,  # 显示所有列
-            line_width=None,  # 不限制宽度
-            max_colwidth=None,  # 不限制列宽
-            index=False,
         )
         stocks_names = list(marketDataCurDay.keys())
         responses = defaultdict(str)
@@ -297,7 +282,7 @@ def market_trading_parallel(
                 executor.submit(
                     process_single_llm,
                     llm,
-                    marketData_str,
+                    marketHistory,
                     marketDataCurDay,
                     stocks_names,
                     date,
@@ -316,9 +301,8 @@ def market_trading_parallel(
 
                 if error is None:
                     responses[llm] = content
-                    # 更新账户信息（注意线程安全）
                     update_account_info(
-                        date, AccountInfoLLMs[llm], llm, process_content, marketData
+                        date, AccountInfoLLMs, llm, process_content, marketDataCurDay
                     )
                 else:
                     print(f"Failed to process {llm}: {error}")
