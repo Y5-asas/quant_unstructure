@@ -50,6 +50,7 @@ def get_user_prompt(
     last_trading_time,
     invoketime,
     marketData,
+    current_time,
     totalReturnPercent,
     availableCash,
     currentAccountValue,
@@ -66,7 +67,7 @@ def get_user_prompt(
         - currentAccountValue: 当前账户总价值（现金 + 持仓市值）
         - positions: 当前持仓详情 json 格式
     """
-    current_time = date.today().isoformat()
+    # current_time = date.today().isoformat()
     duringtime = iso_time_difference(last_trading_time, current_time)
     user_prompt = f"""It has been {duringtime} days since you started trading.
 The current time is {current_time} 

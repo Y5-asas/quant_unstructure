@@ -1,0 +1,278 @@
+{
+    "qwen": {
+        "2025-01-17": {
+            "totalReturnPercent": 0.0,
+            "availableCash": 97290.92000000001,
+            "currentAccountValue": 100000.0,
+            "positions": {
+                "CSCO": {
+                    "buy_in_price": 60.33,
+                    "buy_in_num": 1.0,
+                    "profit_target": 62.0,
+                    "stop_loss": 58.5
+                },
+                "V": {
+                    "buy_in_price": 316.97,
+                    "buy_in_num": 1.0,
+                    "profit_target": 330.0,
+                    "stop_loss": 307.0
+                },
+                "WBA": {
+                    "buy_in_price": 13.03,
+                    "buy_in_num": 1.0,
+                    "profit_target": 14.5,
+                    "stop_loss": 12.0
+                },
+                "CAT": {
+                    "buy_in_price": 381.45,
+                    "buy_in_num": 1.0,
+                    "profit_target": 400.0,
+                    "stop_loss": 370.0
+                },
+                "GS": {
+                    "buy_in_price": 614.84,
+                    "buy_in_num": 1.0,
+                    "profit_target": 650.0,
+                    "stop_loss": 600.0
+                },
+                "DIA": {
+                    "buy_in_price": 432.84,
+                    "buy_in_num": 1.0,
+                    "profit_target": 450.0,
+                    "stop_loss": 420.0
+                },
+                "AMGN": {
+                    "buy_in_price": 274.72,
+                    "buy_in_num": 1.0,
+                    "profit_target": 285.0,
+                    "stop_loss": 265.0
+                },
+                "HON": {
+                    "buy_in_price": 225.64,
+                    "buy_in_num": 1.0,
+                    "profit_target": 235.0,
+                    "stop_loss": 218.0
+                },
+                "AAPL": {
+                    "buy_in_price": 231.86,
+                    "buy_in_num": 1.0,
+                    "profit_target": 245.0,
+                    "stop_loss": 225.0
+                },
+                "MSFT": {
+                    "buy_in_price": 433.22,
+                    "buy_in_num": 1.0,
+                    "profit_target": 450.0,
+                    "stop_loss": 425.0
+                }
+            }
+        }
+    },
+    "deepseek": {
+        "2025-01-17": {
+            "totalReturnPercent": 0.027090799999999873,
+            "availableCash": 99724.18,
+            "currentAccountValue": 102709.07999999999,
+            "positions": {
+                "CSCO": {
+                    "buy_in_price": 60.33,
+                    "buy_in_num": 1.0,
+                    "profit_target": 62.0,
+                    "stop_loss": 58.5
+                },
+                "V": {
+                    "buy_in_price": 316.97,
+                    "buy_in_num": 1.0,
+                    "profit_target": 330.0,
+                    "stop_loss": 307.0
+                },
+                "WBA": {
+                    "buy_in_price": 13.03,
+                    "buy_in_num": 1.0,
+                    "profit_target": 14.5,
+                    "stop_loss": 12.0
+                },
+                "CAT": {
+                    "buy_in_price": 381.45,
+                    "buy_in_num": 1.0,
+                    "profit_target": 400.0,
+                    "stop_loss": 370.0
+                },
+                "GS": {
+                    "buy_in_price": 614.84,
+                    "buy_in_num": 1.0,
+                    "profit_target": 650.0,
+                    "stop_loss": 600.0
+                },
+                "DIA": {
+                    "buy_in_price": 432.84,
+                    "buy_in_num": 1.0,
+                    "profit_target": 450.0,
+                    "stop_loss": 420.0
+                },
+                "AMGN": {
+                    "buy_in_price": 274.72,
+                    "buy_in_num": 1.0,
+                    "profit_target": 285.0,
+                    "stop_loss": 265.0
+                },
+                "HON": {
+                    "buy_in_price": 225.64,
+                    "buy_in_num": 1.0,
+                    "profit_target": 235.0,
+                    "stop_loss": 218.0
+                },
+                "AAPL": {
+                    "buy_in_price": 231.86,
+                    "buy_in_num": 1.0,
+                    "profit_target": 245.0,
+                    "stop_loss": 225.0
+                },
+                "MSFT": {
+                    "buy_in_price": 433.22,
+                    "buy_in_num": 1.0,
+                    "profit_target": 450.0,
+                    "stop_loss": 425.0
+                }
+            }
+        }
+    },
+    "kimi": {
+        "2025-01-17": {
+            "totalReturnPercent": 0.02984899999999994,
+            "availableCash": 100000,
+            "currentAccountValue": 102984.9,
+            "positions": {
+                "CSCO": {
+                    "buy_in_price": 60.33,
+                    "buy_in_num": 1.0,
+                    "profit_target": 62.0,
+                    "stop_loss": 58.5
+                },
+                "V": {
+                    "buy_in_price": 316.97,
+                    "buy_in_num": 1.0,
+                    "profit_target": 330.0,
+                    "stop_loss": 307.0
+                },
+                "WBA": {
+                    "buy_in_price": 13.03,
+                    "buy_in_num": 1.0,
+                    "profit_target": 14.5,
+                    "stop_loss": 12.0
+                },
+                "CAT": {
+                    "buy_in_price": 381.45,
+                    "buy_in_num": 1.0,
+                    "profit_target": 400.0,
+                    "stop_loss": 370.0
+                },
+                "GS": {
+                    "buy_in_price": 614.84,
+                    "buy_in_num": 1.0,
+                    "profit_target": 650.0,
+                    "stop_loss": 600.0
+                },
+                "DIA": {
+                    "buy_in_price": 432.84,
+                    "buy_in_num": 1.0,
+                    "profit_target": 450.0,
+                    "stop_loss": 420.0
+                },
+                "AMGN": {
+                    "buy_in_price": 274.72,
+                    "buy_in_num": 1.0,
+                    "profit_target": 285.0,
+                    "stop_loss": 265.0
+                },
+                "HON": {
+                    "buy_in_price": 225.64,
+                    "buy_in_num": 1.0,
+                    "profit_target": 235.0,
+                    "stop_loss": 218.0
+                },
+                "AAPL": {
+                    "buy_in_price": 231.86,
+                    "buy_in_num": 1.0,
+                    "profit_target": 245.0,
+                    "stop_loss": 225.0
+                },
+                "MSFT": {
+                    "buy_in_price": 433.22,
+                    "buy_in_num": 1.0,
+                    "profit_target": 450.0,
+                    "stop_loss": 425.0
+                }
+            }
+        }
+    },
+    "chatglm": {
+        "2025-01-17": {
+            "totalReturnPercent": 0.02984899999999994,
+            "availableCash": 100000,
+            "currentAccountValue": 102984.9,
+            "positions": {
+                "CSCO": {
+                    "buy_in_price": 60.33,
+                    "buy_in_num": 1.0,
+                    "profit_target": 62.0,
+                    "stop_loss": 58.5
+                },
+                "V": {
+                    "buy_in_price": 316.97,
+                    "buy_in_num": 1.0,
+                    "profit_target": 330.0,
+                    "stop_loss": 307.0
+                },
+                "WBA": {
+                    "buy_in_price": 13.03,
+                    "buy_in_num": 1.0,
+                    "profit_target": 14.5,
+                    "stop_loss": 12.0
+                },
+                "CAT": {
+                    "buy_in_price": 381.45,
+                    "buy_in_num": 1.0,
+                    "profit_target": 400.0,
+                    "stop_loss": 370.0
+                },
+                "GS": {
+                    "buy_in_price": 614.84,
+                    "buy_in_num": 1.0,
+                    "profit_target": 650.0,
+                    "stop_loss": 600.0
+                },
+                "DIA": {
+                    "buy_in_price": 432.84,
+                    "buy_in_num": 1.0,
+                    "profit_target": 450.0,
+                    "stop_loss": 420.0
+                },
+                "AMGN": {
+                    "buy_in_price": 274.72,
+                    "buy_in_num": 1.0,
+                    "profit_target": 285.0,
+                    "stop_loss": 265.0
+                },
+                "HON": {
+                    "buy_in_price": 225.64,
+                    "buy_in_num": 1.0,
+                    "profit_target": 235.0,
+                    "stop_loss": 218.0
+                },
+                "AAPL": {
+                    "buy_in_price": 231.86,
+                    "buy_in_num": 1.0,
+                    "profit_target": 245.0,
+                    "stop_loss": 225.0
+                },
+                "MSFT": {
+                    "buy_in_price": 433.22,
+                    "buy_in_num": 1.0,
+                    "profit_target": 450.0,
+                    "stop_loss": 425.0
+                }
+            }
+        }
+    }
+}

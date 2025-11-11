@@ -1,5 +1,36 @@
 import os
+import re
+import json
+import glob
 import pandas as pd
+
+
+def find_latest_ckpt_file(folder_path):
+    """
+    找到最新的 json 文件
+    """
+    try:
+        return max(
+            [
+                f
+                for f in glob.glob(os.path.join(folder_path, "*.json"))
+                if re.match(r".*/\d+\.json$", f)
+            ],
+            key=lambda x: int(re.search(r"/(\d+)\.json$", x).group(1)),
+        )
+    except:
+        return None
+
+
+def load_info_dict(path):
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data
+
+
+def save_info_dict(InfoDict: dict, path):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(InfoDict, f, ensure_ascii=False, indent=4)
 
 
 def transform_profit_info_to_df(ProfitInfo: dict):

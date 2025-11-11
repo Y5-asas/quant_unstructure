@@ -1,8 +1,5 @@
 from openai import OpenAI
 
-KIMI_API_KEY = "sk-SXRupCTCmRozXPTBLE237MN4iyHaAm1sN1GKybRAIkhHXwdQ"
-KIMI_BASE_URL = "https://api.moonshot.cn/v1"
-
 
 def kimi_response(
     sys_prompt, user_prompt, model="kimi-k2-0905-preview", temperature=0.6
@@ -11,7 +8,7 @@ def kimi_response(
     每次对话都重新起一个 client
     """
     client = OpenAI(
-        api_key=KIMI_API_KEY,
+        api_key=None,
         base_url="https://api.moonshot.cn/v1",
     )
 

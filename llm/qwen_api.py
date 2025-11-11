@@ -1,9 +1,6 @@
 import os
 from openai import OpenAI
 
-QWEN_API_KEY = "sk-8020014e7a404dc2bbe60b5d22c82111"
-QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-
 
 def qwen_response(sys_prompt, user_prompt, model="qwen-plus"):
     """
@@ -12,7 +9,7 @@ def qwen_response(sys_prompt, user_prompt, model="qwen-plus"):
     client = OpenAI(
         # 新加坡和北京地域的API Key不同。
         # 获取API Key：https://help.aliyun.com/zh/model-studio/get-api-key
-        api_key=QWEN_API_KEY,
+        api_key=None,
         # 以下是北京地域base_url，如果使用新加坡地域的模型，需要将base_url替换为：
         # https://dashscope-intl.aliyuncs.com/compatible-mode/v1
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",

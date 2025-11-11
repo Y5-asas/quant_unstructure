@@ -2,7 +2,7 @@ import json
 from .fix_json import smart_fix_json
 
 
-def process_llm_output(content: str, marketData: dict):
+def process_llm_output(content: str, marketDataCurDay: dict):
     """
     处理 LLM 的输出内容
     content: str 格式的 json 字符串
@@ -33,27 +33,32 @@ def process_llm_output(content: str, marketData: dict):
         # content[stock]["change_num"] = content[stock]["risk_usd"] / (
         #     marketData[stock]["open"] - content[stock]["stop_loss"]
         # )
-        content[stock]["change_num"] = (
-            content[stock]["change_value"] / marketData[stock]["open"]
-        )
-        content[stock]["current_price"] = marketData[stock]["open"]
+        open_price = marketDataCurDay[stock]["open"]
+        # open_price = marketData[
+        #     (marketData["code"] == stock) & (marketData["date"] == date)
+        # ]["open"]
+        content[stock]["change_num"] = content[stock]["change_value"] / open_price
+        content[stock]["current_price"] = open_price
+
     return content
 
 
-def update_profit(AccountInfo: dict, marketData: dict):
-    cur_pos: dict = AccountInfo["positions"]
-    account_value = AccountInfo["availableCash"]
+def update_profit(AccountInfoLLMs: dict, llm: str, marketDataCurDay: dict):
+    cur_pos: dict = AccountInfoLLMs[llm]["positions"]
+    account_value = AccountInfoLLMs[llm]["availableCash"]
     for stock, info in cur_pos.items():
         # 计算股票价值
-        account_value += marketData[stock]["open"] * info["buy_in_num"]
-    return_ratio = (account_value - AccountInfo["initialCash"]) / AccountInfo[
-        "initialCash"
-    ]
-    AccountInfo["currentAccountValue"] = account_value
-    AccountInfo["totalReturnPercent"] = return_ratio
+        account_value += marketDataCurDay[stock]["open"] * info["buy_in_num"]
+    return_ratio = (
+        account_value - AccountInfoLLMs[llm]["initialCash"]
+    ) / AccountInfoLLMs[llm]["initialCash"]
+    AccountInfoLLMs[llm]["currentAccountValue"] = account_value
+    AccountInfoLLMs[llm]["totalReturnPercent"] = return_ratio
 
 
-def update_account_info(date: str, AccountInfo: dict, content: dict, marketData: dict):
+def update_account_info(
+    date: str, AccountInfoLLMs: dict, llm: str, content: dict, marketDataCurDay: dict
+):
     """
     date: str 格式交易时间 如: 2020-10-23
     AccountInfo: llm 的账户信息
@@ -66,14 +71,14 @@ def update_account_info(date: str, AccountInfo: dict, content: dict, marketData:
         if info["signal"] == "entry":
             # cost = info["change_num"] * info["current_price"]  # 计算买入花销
             cost = info["change_value"]
-            if cost <= AccountInfo["availableCash"]:
-                AccountInfo["invoketime"] += 1  # 交易次数+1
-                AccountInfo["last_trading_time"] = date  # 更新最后交易时间
-                AccountInfo["availableCash"] -= cost  # 支出
-                cur_pos = AccountInfo["positions"].get(
+            if cost <= AccountInfoLLMs[llm]["availableCash"]:
+                AccountInfoLLMs[llm]["invoketime"] += 1  # 交易次数+1
+                AccountInfoLLMs[llm]["last_trading_time"] = date  # 更新最后交易时间
+                AccountInfoLLMs[llm]["availableCash"] -= cost  # 支出
+                cur_pos = AccountInfoLLMs[llm]["positions"].get(
                     stock, {}
                 )  # 当前这只股票的持仓情况
-                AccountInfo["positions"][stock] = {
+                AccountInfoLLMs[llm]["positions"][stock] = {
                     "buy_in_price": info["current_price"],  # 买入价
                     "buy_in_num": info["change_num"]
                     + cur_pos.get("buy_in_num", 0),  # 买入数量
@@ -82,22 +87,24 @@ def update_account_info(date: str, AccountInfo: dict, content: dict, marketData:
                 }
             else:
                 print(
-                    f"现金不足, 买入 {stock} 需要: {cost}, 当前可用现金: {AccountInfo['availableCash']}"
+                    f"现金不足, 买入 {stock} 需要: {cost}, 当前可用现金: {AccountInfoLLMs[llm]['availableCash']}"
                 )
         elif info["signal"] == "close":
-            cur_pos = AccountInfo["positions"].get(stock, {})
+            cur_pos = AccountInfoLLMs[llm]["positions"].get(stock, {})
             if cur_pos:
-                AccountInfo["invoketime"] += 1
-                AccountInfo["last_trading_time"] = date
+                AccountInfoLLMs[llm]["invoketime"] += 1
+                AccountInfoLLMs[llm]["last_trading_time"] = date
                 sell = cur_pos["buy_in_num"] * info["current_price"]  # 卖出价格
-                AccountInfo["availableCash"] += sell
-                AccountInfo["positions"].pop(stock)  # 卖出股票,  从当前持有资产删除
+                AccountInfoLLMs[llm]["availableCash"] += sell
+                AccountInfoLLMs[llm]["positions"].pop(
+                    stock
+                )  # 卖出股票,  从当前持有资产删除
         else:  # 模型输出错误
             if info["signal"] != "hold":
                 print(f"模型 signal 输出错误, signal: {info['signal']}")
 
     # 更新资产, 计算利润
-    update_profit(AccountInfo, marketData)
+    update_profit(AccountInfoLLMs, llm, marketDataCurDay)
 
 
 def save_profit_info(date: str, ProfitInfoLLMs: dict, AccountInfoLLMs: dict):
