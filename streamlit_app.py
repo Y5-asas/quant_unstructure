@@ -842,11 +842,11 @@ def main():
         st.markdown("---")
         
         # Start button
-        start_button = st.button("🚀 Start Backtest", use_container_width=True)
+        start_button = st.button("🚀 Start Backtest")
         
         # Stop button (if running)
         if st.session_state.backtest_status == "running":
-            stop_button = st.button("⏹️ Stop Backtest", use_container_width=True)
+            stop_button = st.button("⏹️ Stop Backtest")
             if stop_button:
                 st.session_state.backtest_status = "stopped"
                 st.rerun()
@@ -1153,7 +1153,7 @@ def main():
                 # Plot charts
                 st.subheader("📊 Profit Curves")
                 fig = plot_profit_curves(dfs)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig)
                 
                 # Display data table
                 st.subheader("📋 Detailed Data")
@@ -1182,7 +1182,7 @@ def main():
                         st.metric("Final Account Value", f"${final_value:,.2f}")
                     
                     # Data table
-                    st.dataframe(df, use_container_width=True)
+                    st.dataframe(df)
                     
                     # Download button
                     csv = df.to_csv(index=False)
