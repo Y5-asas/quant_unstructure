@@ -33,12 +33,26 @@ from plotly.subplots import make_subplots
 
 # Compatibility function for st.rerun() (available in Streamlit >= 1.18.0)
 # For older versions, use st.experimental_rerun()
+# Store original functions to avoid recursion
+_original_rerun = None
+_original_experimental_rerun = None
+
+def _init_rerun_compat():
+    """Initialize compatibility functions"""
+    global _original_rerun, _original_experimental_rerun
+    if _original_rerun is None:
+        if hasattr(st, 'rerun'):
+            _original_rerun = getattr(st, 'rerun')
+        if hasattr(st, 'experimental_rerun'):
+            _original_experimental_rerun = getattr(st, 'experimental_rerun')
+
 def rerun():
     """Compatible rerun function for different Streamlit versions"""
-    if hasattr(st, 'rerun'):
-        rerun()
-    elif hasattr(st, 'experimental_rerun'):
-        st.experimental_rerun()
+    _init_rerun_compat()
+    if _original_rerun is not None:
+        _original_rerun()
+    elif _original_experimental_rerun is not None:
+        _original_experimental_rerun()
     else:
         # Fallback: raise an error with helpful message
         raise RuntimeError("Streamlit version too old. Please upgrade to Streamlit >= 1.18.0")
