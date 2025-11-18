@@ -31,6 +31,18 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 
+# Compatibility function for st.rerun() (available in Streamlit >= 1.18.0)
+# For older versions, use st.experimental_rerun()
+def rerun():
+    """Compatible rerun function for different Streamlit versions"""
+    if hasattr(st, 'rerun'):
+        rerun()
+    elif hasattr(st, 'experimental_rerun'):
+        st.experimental_rerun()
+    else:
+        # Fallback: raise an error with helpful message
+        raise RuntimeError("Streamlit version too old. Please upgrade to Streamlit >= 1.18.0")
+
 # Ensure we can import existing backtest logic
 # BASE_DIR is the quant_unstructure directory (where this file is located)
 BASE_DIR = Path(__file__).resolve().parent
@@ -781,7 +793,7 @@ def main():
                 if 'resume_start_date' not in st.session_state or st.session_state.resume_start_date != new_start_date:
                     st.session_state.resume_start_date = new_start_date
                     st.info(f"📅 Start date automatically set to {new_start_date.strftime('%Y-%m-%d')} (day after resume date {earliest_resume_date.strftime('%Y-%m-%d')})")
-                    st.rerun()  # Rerun to update the UI with new date
+                    rerun()  # Rerun to update the UI with new date
                 # Use the updated start_date
                 start_date = st.session_state.resume_start_date
             else:
@@ -849,7 +861,7 @@ def main():
             stop_button = st.button("⏹️ Stop Backtest")
             if stop_button:
                 st.session_state.backtest_status = "stopped"
-                st.rerun()
+                rerun()
         
         # Data source status
         st.markdown("---")
@@ -877,17 +889,17 @@ def main():
             if result_dict.get("status") == "completed" and result_dict.get("result_files"):
                 st.session_state.backtest_status = "completed"
                 st.session_state.backtest_result = result_dict
-                st.rerun()
+                rerun()
             elif error_dict.get("error"):
                 st.session_state.backtest_status = "failed"
                 st.session_state.backtest_error = error_dict.get("error")
-                st.rerun()
+                rerun()
             else:
                 # Thread ended but no results, possibly abnormal exit
                 if not result_dict and not error_dict:
                     st.session_state.backtest_status = "failed"
                     st.session_state.backtest_error = "Backtest thread exited abnormally, please check logs"
-                    st.rerun()
+                    rerun()
         
         # Display progress
         st.header("🔄 Backtest Running...")
@@ -917,7 +929,7 @@ def main():
         
         # Auto refresh (every 2 seconds)
         time.sleep(2)
-        st.rerun()
+        rerun()
     
     # Start backtest
     elif start_button and selected_models:
@@ -971,7 +983,7 @@ def main():
             thread.start()
             st.session_state.backtest_thread = thread
             
-            st.rerun()
+            rerun()
     
     # Display results
     elif st.session_state.backtest_result or st.session_state.backtest_status == "completed":
