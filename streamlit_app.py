@@ -103,6 +103,7 @@ def run_numeric_backtest(
     result_dict: Dict[str, Any],
     error_dict: Dict[str, Any],
     resume_from_checkpoint: bool = False,
+    model_resume_dates: Optional[Dict[str, str]] = None,
 ):
     """Run numeric backtest (background thread)"""
     try:
@@ -232,6 +233,7 @@ def run_nlp_backtest(
     result_dict: Dict[str, Any],
     error_dict: Dict[str, Any],
     resume_from_checkpoint: bool = False,
+    model_resume_dates: Optional[Dict[str, str]] = None,
 ):
     """Run NLP backtest (background thread)"""
     import traceback
@@ -254,6 +256,27 @@ def run_nlp_backtest(
         if not resume_from_checkpoint:
             NLP_AccountInfoLLMs.clear()
             NLP_ProfitInfoLLMs.clear()
+        else:
+            # If resuming with specific dates, load account state from NLP logs
+            if model_resume_dates:
+                nlp_dir = BASE_DIR / "results_nlp"
+                for model, resume_date in model_resume_dates.items():
+                    if resume_date and model in selected_llms:
+                        nlp_file = nlp_dir / f"{model}_nlp.jsonl"
+                        if nlp_file.exists():
+                            try:
+                                # Find the record for the resume date
+                                with open(nlp_file, "r", encoding="utf-8") as f:
+                                    for line in f:
+                                        if line.strip():
+                                            record = json.loads(line)
+                                            if record.get("date") == resume_date and "account_after" in record:
+                                                # Load account state from this date
+                                                NLP_AccountInfoLLMs[model] = record["account_after"].copy()
+                                                print(f"[NLP Backtest] Loaded {model} account state from {resume_date}")
+                                                break
+                            except Exception as e:
+                                print(f"[NLP Backtest] Error loading account state for {model}: {e}")
         
         NLP_AccountInfoLLMs.update(
             initialize_llm_info_nlp(
@@ -272,6 +295,26 @@ def run_nlp_backtest(
             )
             or {}
         )
+        
+        # Mark dates as processed if resuming from specific dates
+        # Mark all dates up to and INCLUDING resume_date as processed
+        # This way, when start_date is set to resume_date + 1 day, we skip all dates up to resume_date
+        if resume_from_checkpoint and model_resume_dates:
+            for model, resume_date in model_resume_dates.items():
+                if resume_date and model in NLP_ProfitInfoLLMs:
+                    # Mark all dates up to and including resume_date as processed
+                    # Since start_date will be resume_date + 1, we want to skip resume_date and all before it
+                    nlp_file = BASE_DIR / "results_nlp" / f"{model}_nlp.jsonl"
+                    if nlp_file.exists():
+                        dates = extract_dates_from_nlp_log(str(nlp_file))
+                        for date_str in dates:
+                            if date_str <= resume_date:  # Mark dates up to and including resume_date
+                                # Mark this date as already processed
+                                if model not in NLP_ProfitInfoLLMs:
+                                    NLP_ProfitInfoLLMs[model] = {}
+                                if date_str not in NLP_ProfitInfoLLMs[model]:
+                                    NLP_ProfitInfoLLMs[model][date_str] = {}
+                                    print(f"[NLP Backtest] Marked {model} date {date_str} as processed (up to resume date {resume_date})")
         
         # Get stock data
         progress_dict["message"] = "Loading stock data..."
@@ -423,6 +466,60 @@ def load_results(result_files: List[str]) -> Dict[str, pd.DataFrame]:
     return dfs
 
 
+def extract_dates_from_nlp_log(nlp_file: str) -> List[str]:
+    """Extract all dates from an NLP log file"""
+    dates = []
+    if not os.path.exists(nlp_file):
+        return dates
+    try:
+        with open(nlp_file, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        record = json.loads(line)
+                        if "date" in record:
+                            dates.append(record["date"])
+                    except json.JSONDecodeError:
+                        continue
+    except Exception as e:
+        print(f"Error reading NLP log {nlp_file}: {e}")
+    return sorted(set(dates))  # Return unique sorted dates
+
+
+def get_model_checkpoint_dates(selected_models: List[str], backtest_mode: str) -> Dict[str, List[str]]:
+    """Get available checkpoint dates for each selected model from NLP logs"""
+    model_dates = {}
+    nlp_dir = BASE_DIR / "results_nlp"
+    
+    for model in selected_models:
+        if backtest_mode == "NLP Backtest":
+            nlp_file = nlp_dir / f"{model}_nlp.jsonl"
+            dates = extract_dates_from_nlp_log(str(nlp_file))
+            if dates:
+                model_dates[model] = dates
+        else:
+            # For numeric backtest, check checkpoint files
+            ckpt_dir = BASE_DIR / "ckpt" / "AccountInfoLLMs"
+            if ckpt_dir.exists():
+                # Try to get dates from checkpoint or profit files
+                profit_ckpt_dir = BASE_DIR / "ckpt" / "ProfitInfoLLMs"
+                dates = []
+                if profit_ckpt_dir.exists():
+                    from utils.save_result import load_info_dict
+                    for ckpt_file in sorted(profit_ckpt_dir.glob(f"{model}_*.json")):
+                        try:
+                            data = load_info_dict(str(ckpt_file))
+                            if data:
+                                # Extract dates from profit info
+                                dates.extend([k for k in data.keys() if isinstance(k, str) and len(k) == 10])
+                        except:
+                            pass
+                if dates:
+                    model_dates[model] = sorted(set(dates))
+    
+    return model_dates
+
+
 def load_nlp_logs(nlp_files: List[str]) -> Dict[str, List[Dict]]:
     """Load NLP log files"""
     logs = {}
@@ -522,11 +619,17 @@ def main():
         today = date.today()
         col1, col2 = st.columns(2)
         with col1:
+            # Initialize start_date, will be updated if resuming from checkpoint
+            default_start_date = date(2025, 1, 1)
+            if 'resume_start_date' in st.session_state:
+                default_start_date = st.session_state.resume_start_date
+            
             start_date = st.date_input(
                 "Start Date",
-                value=date(2025, 1, 1),
+                value=default_start_date,
                 min_value=date(2020, 1, 1),
                 max_value=today,
+                key="start_date_input",
             )
         with col2:
             end_date = st.date_input(
@@ -568,10 +671,118 @@ def main():
         resume_from_checkpoint = st.checkbox(
             "Resume from Checkpoint",
             value=False,
-            help="If enabled, continue from the last saved checkpoint instead of starting from scratch"
+            help="If enabled, continue from a saved checkpoint. You can select which date to resume from for each model."
         )
         
-        # Show checkpoint status if available
+        # Update session state if user manually changes start_date (but only if not resuming)
+        # This needs to be after resume_from_checkpoint is defined
+        if not resume_from_checkpoint and 'start_date_input' in st.session_state:
+            current_start_date = st.session_state.start_date_input
+            if 'resume_start_date' not in st.session_state or st.session_state.resume_start_date != current_start_date:
+                st.session_state.resume_start_date = current_start_date
+        
+        # Model-specific resume date selection
+        model_resume_dates = {}
+        earliest_resume_date = None
+        
+        if resume_from_checkpoint and selected_models:
+            st.markdown("**📅 Select Resume Date for Each Model:**")
+            
+            # Get available dates for each model
+            model_checkpoint_dates = get_model_checkpoint_dates(selected_models, backtest_mode)
+            
+            # Debug info
+            if not model_checkpoint_dates:
+                nlp_dir = BASE_DIR / "results_nlp"
+                st.warning(f"⚠️ No checkpoint dates found. Debug info:")
+                st.caption(f"  - NLP directory: {nlp_dir} (exists: {nlp_dir.exists()})")
+                if nlp_dir.exists():
+                    all_files = list(nlp_dir.glob("*.jsonl"))
+                    st.caption(f"  - Found {len(all_files)} jsonl files: {[f.name for f in all_files]}")
+                st.caption(f"  - Selected models: {selected_models}")
+                st.caption(f"  - Backtest mode: {backtest_mode}")
+            
+            if model_checkpoint_dates:
+                for model in selected_models:
+                    model_name = MODEL_OPTIONS.get(model, model)
+                    available_dates = model_checkpoint_dates.get(model, [])
+                    
+                    if available_dates:
+                        # Show account state from the last date
+                        last_date = available_dates[-1]
+                        nlp_file = BASE_DIR / "results_nlp" / f"{model}_nlp.jsonl"
+                        
+                        # Try to load account state from NLP log
+                        account_info = None
+                        if nlp_file.exists() and backtest_mode == "NLP Backtest":
+                            try:
+                                with open(nlp_file, "r", encoding="utf-8") as f:
+                                    for line in f:
+                                        if line.strip():
+                                            record = json.loads(line)
+                                            if record.get("date") == last_date and "account_after" in record:
+                                                account_info = record["account_after"]
+                                                break
+                            except:
+                                pass
+                        
+                        # Display model info
+                        with st.expander(f"📊 {model_name} - Last processed: {last_date}", expanded=True):
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                selected_date = st.selectbox(
+                                    f"Resume from date:",
+                                    options=available_dates,
+                                    index=len(available_dates) - 1,  # Default to last date
+                                    key=f"resume_date_{model}",
+                                    help=f"Select which date to resume from. Start date will be set to the day after this date."
+                                )
+                                model_resume_dates[model] = selected_date
+                                
+                                # Track earliest resume date to update start_date
+                                if selected_date:
+                                    try:
+                                        resume_date_obj = datetime.strptime(selected_date, "%Y-%m-%d").date()
+                                        if earliest_resume_date is None or resume_date_obj < earliest_resume_date:
+                                            earliest_resume_date = resume_date_obj
+                                    except:
+                                        pass
+                            
+                            with col2:
+                                if account_info:
+                                    st.metric("Account Value", f"${account_info.get('currentAccountValue', 0):,.2f}")
+                                    st.metric("Available Cash", f"${account_info.get('availableCash', 0):,.2f}")
+                                    positions = account_info.get('positions', {})
+                                    if positions:
+                                        st.caption(f"Holdings: {', '.join(positions.keys())}")
+                                    else:
+                                        st.caption("No positions")
+                                else:
+                                    st.info("Account info not available")
+                    else:
+                        st.warning(f"⚠️ {model_name}: No checkpoint dates found. Will start from beginning.")
+                        model_resume_dates[model] = None
+            else:
+                st.warning("⚠️ No checkpoint dates found for selected models. Will start from beginning.")
+        
+        # Auto-update start_date based on selected resume date
+        if resume_from_checkpoint and earliest_resume_date:
+            from datetime import timedelta
+            # Set start_date to the day after the earliest resume date
+            new_start_date = earliest_resume_date + timedelta(days=1)
+            if new_start_date <= end_date:
+                # Update start_date in session state (but don't modify widget state directly)
+                if 'resume_start_date' not in st.session_state or st.session_state.resume_start_date != new_start_date:
+                    st.session_state.resume_start_date = new_start_date
+                    st.info(f"📅 Start date automatically set to {new_start_date.strftime('%Y-%m-%d')} (day after resume date {earliest_resume_date.strftime('%Y-%m-%d')})")
+                    st.rerun()  # Rerun to update the UI with new date
+                # Use the updated start_date
+                start_date = st.session_state.resume_start_date
+            else:
+                st.warning(f"⚠️ Calculated start date {new_start_date} is after end date. Please adjust dates manually.")
+        
+        # Show checkpoint status if available (legacy display)
         if resume_from_checkpoint:
             ckpt_dir = BASE_DIR / "ckpt" / ("nlp" if backtest_mode == "NLP Backtest" else "") / "AccountInfoLLMs"
             if backtest_mode == "NLP Backtest":
@@ -742,13 +953,13 @@ def main():
             if backtest_mode == "Numeric Backtest":
                 thread = threading.Thread(
                     target=run_numeric_backtest,
-                    args=(config, progress_dict, result_dict, error_dict, resume_from_checkpoint),
+                    args=(config, progress_dict, result_dict, error_dict, resume_from_checkpoint, model_resume_dates),
                     daemon=True,
                 )
             else:
                 thread = threading.Thread(
                     target=run_nlp_backtest,
-                    args=(config, progress_dict, result_dict, error_dict, resume_from_checkpoint),
+                    args=(config, progress_dict, result_dict, error_dict, resume_from_checkpoint, model_resume_dates),
                     daemon=True,
                 )
             
