@@ -354,13 +354,18 @@ def run_nlp_backtest(
                 for f in ckpt_dir.glob("*.json"):
                     f.unlink()
             
-            # Clear NLP log files (only if starting fresh, not when resuming from checkpoint)
+            # Clear NLP log files only for selected models (only if starting fresh, not when resuming from checkpoint)
             # When resuming, we want to keep existing logs and append new ones
+            # Different AI models should keep their own jsonl files and not overwrite each other
             if not resume_from_checkpoint:
                 nlp_dir = BASE_DIR / "results_nlp"
                 if nlp_dir.exists():
-                    for f in nlp_dir.glob("*.jsonl"):
-                        f.unlink()
+                    # Only delete jsonl files for selected models, keep other models' files
+                    for model in selected_llms.keys():
+                        nlp_file = nlp_dir / f"{model}_nlp.jsonl"
+                        if nlp_file.exists():
+                            nlp_file.unlink()
+                            print(f"[NLP Backtest] Cleared NLP log file for {model}: {nlp_file}")
         
         # Run NLP backtest
         progress_dict["message"] = "Running NLP backtest..."
@@ -837,7 +842,7 @@ def main():
         st.markdown("---")
         
         # Start button
-        start_button = st.button("🚀 Start Backtest", type="primary", use_container_width=True)
+        start_button = st.button("🚀 Start Backtest", use_container_width=True)
         
         # Stop button (if running)
         if st.session_state.backtest_status == "running":
