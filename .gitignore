@@ -1,1 +1,45 @@
+# Environment variables
 .env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Results and checkpoints (large files)
+results/*.csv
+ckpt/**/*.json
+results_nlp/*.jsonl
+
+# Logs
+logs/
+*.log
+
+# Data directories (if large)
+DJI_data/
+original_data/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Node modules (if any)
+node_modules/
+package-lock.json

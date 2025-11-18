@@ -29,16 +29,24 @@ def process_llm_output(content: str, marketDataCurDay: dict):
 
     # 计算每只股票该买入/卖出多少
     for stock, info in content.items():
-        # print(f"=========", content[stock])
-        # content[stock]["change_num"] = content[stock]["risk_usd"] / (
-        #     marketData[stock]["open"] - content[stock]["stop_loss"]
-        # )
+        # Check if stock exists in market data
+        if stock not in marketDataCurDay:
+            print(f"Warning: Stock {stock} not found in market data, skipping")
+            continue
+        if "open" not in marketDataCurDay[stock]:
+            print(f"Warning: Stock {stock} has no 'open' price in market data, skipping")
+            continue
+            
         open_price = marketDataCurDay[stock]["open"]
         # open_price = marketData[
         #     (marketData["code"] == stock) & (marketData["date"] == date)
         # ]["open"]
-        content[stock]["change_num"] = content[stock]["change_value"] / open_price
-        content[stock]["current_price"] = open_price
+        if open_price > 0:
+            content[stock]["change_num"] = content[stock]["change_value"] / open_price
+            content[stock]["current_price"] = open_price
+        else:
+            print(f"Warning: Stock {stock} has invalid open price: {open_price}, skipping")
+            continue
 
     return content
 
@@ -48,7 +56,14 @@ def update_profit(AccountInfoLLMs: dict, llm: str, marketDataCurDay: dict):
     account_value = AccountInfoLLMs[llm]["availableCash"]
     for stock, info in cur_pos.items():
         # 计算股票价值
-        account_value += marketDataCurDay[stock]["open"] * info["buy_in_num"]
+        # Check if stock exists in market data for this day
+        if stock in marketDataCurDay and "open" in marketDataCurDay[stock]:
+            account_value += marketDataCurDay[stock]["open"] * info["buy_in_num"]
+        else:
+            # If stock not in market data, use buy_in_price as fallback
+            # This can happen if stock was delisted or data is missing
+            print(f"Warning: Stock {stock} not found in market data for this day, using buy_in_price")
+            account_value += info.get("buy_in_price", 0) * info["buy_in_num"]
     return_ratio = (
         account_value - AccountInfoLLMs[llm]["initialCash"]
     ) / AccountInfoLLMs[llm]["initialCash"]

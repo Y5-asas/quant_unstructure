@@ -1,0 +1,25 @@
+# Core dependencies for Streamlit app
+streamlit>=1.29.0
+plotly>=5.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# LLM API clients
+openai>=1.0.0
+zhipuai>=2.0.0
+
+# Environment and utilities
+python-dotenv>=1.0.0
+tqdm>=4.65.0
+
+# Data fetching
+yfinance>=0.2.0
+
+# Backend API (optional, for FastAPI backend)
+fastapi>=0.100.0
+pydantic>=1.10.0
+uvicorn>=0.23.0
+
+# Additional utilities
+requests>=2.31.0
+beautifulsoup4>=4.12.0

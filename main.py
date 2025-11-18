@@ -162,8 +162,10 @@ def market_trading(
         stocks_names = list(marketDataCurDay.keys())
         # stocks_names = list(set(marketData["code"]))
         responses = defaultdict(str)  # 回复结果字典
+        # 只遍历当前配置的模型，避免从 checkpoint 加载的旧模型键
+        active_llms = [llm for llm in AccountInfoLLMs if llm in LLMs]
         for llm in tqdm(
-            AccountInfoLLMs, desc=f"正在进行第{i+1}日交易 总计{len(stocks_dict)}日"
+            active_llms, desc=f"正在进行第{i+1}日交易 总计{len(stocks_dict)}日"
         ):
             # check是否已经交易过
             if date in ProfitInfoLLMs[llm]:
@@ -258,22 +260,37 @@ def market_trading_parallel(
     history=10,
     debug=False,
     max_workers=len(LLMs),
+    progress_callback=None,
 ):
     """
     运行每日交易的函数（并行版本）
+    
+    Args:
+        progress_callback: Optional callback function(current_day, total_days, date) to update progress
     """
     if debug:
         stocks_dict = dict(itertools.islice(stocks_dict.items(), 15))
 
+    dates_list = list(stocks_dict.keys())
+    total_days = len([d for d in dates_list if isinstance(d, str)]) - history
+    
     for i, date in enumerate(stocks_dict):
         if i < history:
             continue
+        
+        # Update progress if callback provided
+        if progress_callback:
+            current_day = i - history + 1
+            progress_callback(current_day, total_days, date)
         # marketData = stocks_dict[date]
         marketHistory, marketDataCurDay = get_previous_k_dates(
             stocks_dict, date, k=history
         )
         stocks_names = list(marketDataCurDay.keys())
         responses = defaultdict(str)
+
+        # 只遍历当前配置的模型，避免从 checkpoint 加载的旧模型键
+        active_llms = [llm for llm in AccountInfoLLMs if llm in LLMs]
 
         # 使用线程池并行处理
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -287,7 +304,7 @@ def market_trading_parallel(
                     stocks_names,
                     date,
                 ): llm
-                for llm in AccountInfoLLMs
+                for llm in active_llms
             }
 
             # 使用tqdm显示进度
@@ -318,7 +335,7 @@ def market_trading_parallel(
 
 if __name__ == "__main__":
     # 初始化所有配置
-    model = "qwen"  # 根据自己负责的模型填入 ['qwen', 'deepseek', 'kimi', 'chatglm']
+    model = "deepseek"  # 根据自己负责的模型填入 ['qwen', 'deepseek', 'kimi', 'chatglm']
     LLMs = {model: LLMs[model]}
 
     # initialize_position()  # 初始化持仓情况
@@ -342,7 +359,7 @@ if __name__ == "__main__":
     # print(list(stocks_dict.keys()))
 
     # 开始迭代, 按日为单位, 每日获取股票数据输入进 llm 获取输出
-    market_trading(AccountInfoLLMs, ProfitInfoLLMs, stocks_dict, debug=True)  # 单线程
+    market_trading(AccountInfoLLMs, ProfitInfoLLMs, stocks_dict, debug=False)  # 单线程
     # market_trading_parallel(
-    #     AccountInfoLLMs, ProfitInfoLLMs, stocks_dict, debug=True, max_workers=4
+    #     AccountInfoLLMs, ProfitInfoLLMs, stocks_dict, debug=False, max_workers=4
     # )  # 多线程并行

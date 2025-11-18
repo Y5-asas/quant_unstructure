@@ -39,9 +39,9 @@ def read_one_stock_info(
         drop=True
     )
     if start_date:
-        stock_csv_info = stock_csv_info[stock_csv_info["date"] > start_date]
+        stock_csv_info = stock_csv_info[stock_csv_info["date"] >= start_date]
     if end_date:
-        stock_csv_info = stock_csv_info[stock_csv_info["date"] < end_date]
+        stock_csv_info = stock_csv_info[stock_csv_info["date"] <= end_date]
 
     stock_csv_info = enrich_daily_indicators(stock_csv_info)
     closes: List = stock_csv_info["close"].tolist()
@@ -102,9 +102,32 @@ def merge_all_stocks_info(all_stocks_dict):
         }
     """
     adjust_stocks_dict = defaultdict(dict)
+    
+    # 获取所有股票的日期集合和股票代码集合
+    all_dates = set()
+    all_stock_codes = set(all_stocks_dict.keys())
+    
     for stock_code, date_data in all_stocks_dict.items():
-        for date, stock_info in date_data.items():
-            adjust_stocks_dict.setdefault(date, {})[stock_code] = stock_info
+        all_dates.update(date_data.keys())
+    
+    # 只包含所有股票都有数据的日期，避免某些股票数据缺失导致 KeyError
+    common_dates = []
+    for date in sorted(all_dates):
+        # 检查该日期是否所有股票都有数据
+        stocks_with_data = {code for code, date_data in all_stocks_dict.items() if date in date_data}
+        if stocks_with_data == all_stock_codes:
+            common_dates.append(date)
+        else:
+            missing_stocks = all_stock_codes - stocks_with_data
+            # 只在调试时打印，避免输出过多
+            # print(f"Warning: Date {date} missing data for stocks: {missing_stocks}")
+    
+    # 合并数据
+    for date in common_dates:
+        for stock_code in all_stock_codes:
+            if date in all_stocks_dict[stock_code]:
+                adjust_stocks_dict[date][stock_code] = all_stocks_dict[stock_code][date]
+    
     return adjust_stocks_dict
 
 
